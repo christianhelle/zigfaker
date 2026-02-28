@@ -182,13 +182,11 @@ pub const AutoFaker = struct {
         const buf = try allocator.alloc(u8, 36);
         const hex = "0123456789abcdef";
         // Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-        var i: usize = 0;
         for (0..36) |pos| {
             if (pos == 8 or pos == 13 or pos == 18 or pos == 23) {
                 buf[pos] = '-';
             } else {
                 buf[pos] = hex[rng.uintLessThan(u8, 16)];
-                i += 1;
             }
         }
         return buf;
