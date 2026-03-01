@@ -3,7 +3,7 @@ const zigfaker = @import("zigfaker");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
+    defer std.debug.assert(gpa.deinit() == .ok);
     const allocator = gpa.allocator();
 
     std.debug.print("ZigFaker - Anonymous Data Generation Example\n", .{});
