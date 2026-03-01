@@ -71,14 +71,10 @@ In fake data mode, string fields are populated with realistic data based on fiel
 
 ## Installation
 
-Add ZigFaker to your `build.zig.zon` dependencies:
+Add ZigFaker to your `build.zig.zon` dependencies by running:
 
-```zig
-.dependencies = .{
-    .zigfaker = .{
-        .url = "https://github.com/christianhelle/zigfaker/archive/refs/heads/main.tar.gz",
-    },
-},
+```sh
+zig fetch --save https://github.com/christianhelle/zigfaker/archive/refs/heads/main.tar.gz
 ```
 
 Then in your `build.zig`, add the module to your test step:
