@@ -28,6 +28,19 @@
 const std = @import("std");
 const faker_data = @import("faker_data.zig");
 
+const person = @import("generators/person.zig");
+const location = @import("generators/location.zig");
+const contact = @import("generators/contact.zig");
+const internet = @import("generators/internet.zig");
+const company = @import("generators/company.zig");
+const finance = @import("generators/finance.zig");
+const text = @import("generators/text.zig");
+
+// Ensure all generator modules are unconditionally compiled so their tests are included.
+comptime {
+    _ = text;
+}
+
 /// ZigFaker generates anonymous or realistic-looking fake data for use in unit tests.
 /// It uses comptime type reflection to automatically populate struct fields.
 pub const ZigFaker = struct {
@@ -195,19 +208,12 @@ pub const ZigFaker = struct {
         return buf;
     }
 
-    /// Pick a random element from a slice.
-    fn pickRandom(self: *ZigFaker, comptime T: type, items: []const T) T {
-        const idx = self.random().uintLessThan(usize, items.len);
-        return items[idx];
-    }
-
-    /// Generate a fake string based on field name context (fake data mode).
+    /// Dispatch fake string generation to the appropriate domain generator based on field name.
     fn generateFakeString(self: *ZigFaker, comptime field_name: []const u8) ![]const u8 {
         const allocator = self.arena.allocator();
         const rng = self.random();
 
-        // Normalize field name for comparison (lowercase, underscore-based).
-        // We check common field name patterns to return contextually appropriate data.
+        // Normalize field name to lowercase for comparison.
         const name_lower = comptime blk: {
             var buf: [field_name.len]u8 = undefined;
             _ = std.ascii.lowerString(&buf, field_name);
@@ -215,168 +221,66 @@ pub const ZigFaker = struct {
         };
         const fn_str: []const u8 = &name_lower;
 
-        // Name fields
-        if (comptime containsAny(fn_str, &.{ "firstname", "first_name", "fname", "given_name", "givenname" })) {
-            return self.pickRandom([]const u8, &faker_data.first_names);
-        }
-        if (comptime containsAny(fn_str, &.{ "lastname", "last_name", "lname", "surname", "family_name", "familyname" })) {
-            return self.pickRandom([]const u8, &faker_data.last_names);
-        }
-        // Exact match for generic "name" to avoid overmatching fields like "hostname" or "company_name".
-        if (comptime std.mem.eql(u8, fn_str, "name")) {
-            const first = self.pickRandom([]const u8, &faker_data.first_names);
-            const last = self.pickRandom([]const u8, &faker_data.last_names);
-            return std.fmt.allocPrint(allocator, "{s} {s}", .{ first, last });
-        }
-        if (comptime containsAny(fn_str, &.{ "fullname", "full_name", "username" })) {
-            const first = self.pickRandom([]const u8, &faker_data.first_names);
-            const last = self.pickRandom([]const u8, &faker_data.last_names);
-            return std.fmt.allocPrint(allocator, "{s} {s}", .{ first, last });
-        }
+        // --- Person ---
+        if (comptime containsAny(fn_str, &.{ "firstname", "first_name", "fname", "given_name", "givenname" }))
+            return person.firstName(rng);
+        if (comptime containsAny(fn_str, &.{ "lastname", "last_name", "lname", "surname", "family_name", "familyname" }))
+            return person.lastName(rng);
+        if (comptime std.mem.eql(u8, fn_str, "name"))
+            return person.fullName(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "fullname", "full_name", "username" }))
+            return person.fullName(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "job", "occupation", "position", "title", "role", "jobtitle", "job_title" }))
+            return person.jobTitle(rng);
 
-        // Job / occupation
-        if (comptime containsAny(fn_str, &.{ "job", "occupation", "position", "title", "role", "jobtitle", "job_title" })) {
-            return self.pickRandom([]const u8, &faker_data.job_titles);
-        }
+        // --- Location ---
+        if (comptime containsAny(fn_str, &.{ "city", "town" }))
+            return location.city(rng);
+        if (comptime containsAny(fn_str, &.{"country"}))
+            return location.country(rng);
+        if (comptime containsAny(fn_str, &.{ "street", "address", "addr" }))
+            return location.streetAddress(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "zip", "zipcode", "zip_code", "postal", "postalcode", "postal_code" }))
+            return location.zipCode(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "state", "province", "region" }))
+            return location.state(rng);
 
-        // Location fields
-        if (comptime containsAny(fn_str, &.{ "city", "town" })) {
-            return self.pickRandom([]const u8, &faker_data.cities);
-        }
-        if (comptime containsAny(fn_str, &.{"country"})) {
-            return self.pickRandom([]const u8, &faker_data.countries);
-        }
-        if (comptime containsAny(fn_str, &.{ "street", "address", "addr" })) {
-            const num = rng.intRangeAtMost(u16, 1, 9999);
-            const street = self.pickRandom([]const u8, &faker_data.streets);
-            return std.fmt.allocPrint(allocator, "{d} {s}", .{ num, street });
-        }
-        if (comptime containsAny(fn_str, &.{ "zip", "zipcode", "zip_code", "postal", "postalcode", "postal_code" })) {
-            const code = rng.intRangeAtMost(u32, 10000, 99999);
-            return std.fmt.allocPrint(allocator, "{d:0>5}", .{code});
-        }
-        if (comptime containsAny(fn_str, &.{ "state", "province", "region" })) {
-            const states = [_][]const u8{
-                "California", "Texas",    "New York", "Florida",
-                "Illinois",   "Ohio",     "Georgia",  "Michigan",
-                "Washington", "Colorado",
-            };
-            return self.pickRandom([]const u8, &states);
-        }
+        // --- Contact ---
+        if (comptime containsAny(fn_str, &.{ "safe_email", "safeemail" }))
+            return contact.safeEmail(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "company_email", "companyemail", "work_email", "workemail" }))
+            return contact.companyEmail(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "email", "emailaddress", "email_address" }))
+            return contact.email(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "phone", "phonenumber", "phone_number", "mobile", "cell" }))
+            return contact.phoneNumber(allocator, rng);
 
-        // Contact fields
-        if (comptime containsAny(fn_str, &.{ "email", "emailaddress", "email_address" })) {
-            const first = self.pickRandom([]const u8, &faker_data.first_names);
-            const last = self.pickRandom([]const u8, &faker_data.last_names);
-            const domain = self.pickRandom([]const u8, &faker_data.email_domains);
-            const num = rng.intRangeAtMost(u16, 1, 999);
-            return std.fmt.allocPrint(allocator, "{s}{s}{d}@{s}", .{
-                std.ascii.lowerString(try allocator.dupe(u8, first), first),
-                std.ascii.lowerString(try allocator.dupe(u8, last), last),
-                num,
-                domain,
-            });
-        }
-        if (comptime containsAny(fn_str, &.{ "safe_email", "safeemail" })) {
-            const first = self.pickRandom([]const u8, &faker_data.first_names);
-            const num = rng.intRangeAtMost(u16, 1, 999);
-            return std.fmt.allocPrint(allocator, "{s}{d}@example.com", .{
-                std.ascii.lowerString(try allocator.dupe(u8, first), first),
-                num,
-            });
-        }
-        if (comptime containsAny(fn_str, &.{ "company_email", "companyemail", "work_email", "workemail" })) {
-            const first = self.pickRandom([]const u8, &faker_data.first_names);
-            const domain = self.pickRandom([]const u8, &faker_data.company_domains);
-            return std.fmt.allocPrint(allocator, "{s}@{s}", .{
-                std.ascii.lowerString(try allocator.dupe(u8, first), first),
-                domain,
-            });
-        }
-        if (comptime containsAny(fn_str, &.{ "phone", "phonenumber", "phone_number", "mobile", "cell" })) {
-            const area = rng.intRangeAtMost(u16, 200, 999);
-            const mid = rng.intRangeAtMost(u16, 200, 999);
-            const end = rng.intRangeAtMost(u16, 1000, 9999);
-            return std.fmt.allocPrint(allocator, "+1-{d}-{d}-{d}", .{ area, mid, end });
-        }
+        // --- Internet ---
+        if (comptime containsAny(fn_str, &.{ "hostname", "host" }))
+            return internet.hostname(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "ipv4", "ip4", "ip_address" }))
+            return internet.ipv4(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "ipv6", "ip6" }))
+            return internet.ipv6(allocator, rng);
+        if (comptime containsAny(fn_str, &.{ "url", "website", "homepage" }))
+            return internet.url(allocator, rng);
 
-        // Network fields
-        if (comptime containsAny(fn_str, &.{ "hostname", "host" })) {
-            const prefix = self.pickRandom([]const u8, &faker_data.hostnames_prefix);
-            const num = rng.intRangeAtMost(u8, 1, 99);
-            const tld = self.pickRandom([]const u8, &faker_data.tlds);
-            const last = self.pickRandom([]const u8, &faker_data.last_names);
-            return std.fmt.allocPrint(allocator, "{s}{d}.{s}.{s}", .{
-                prefix,
-                num,
-                std.ascii.lowerString(try allocator.dupe(u8, last), last),
-                tld,
-            });
-        }
-        if (comptime containsAny(fn_str, &.{ "ipv4", "ip4", "ip_address" })) {
-            return std.fmt.allocPrint(allocator, "{d}.{d}.{d}.{d}", .{
-                rng.intRangeAtMost(u8, 1, 254),
-                rng.intRangeAtMost(u8, 0, 255),
-                rng.intRangeAtMost(u8, 0, 255),
-                rng.intRangeAtMost(u8, 1, 254),
-            });
-        }
-        if (comptime containsAny(fn_str, &.{ "ipv6", "ip6" })) {
-            return std.fmt.allocPrint(allocator, "{x:0>4}:{x:0>4}:{x:0>4}:{x:0>4}:{x:0>4}:{x:0>4}:{x:0>4}:{x:0>4}", .{
-                rng.int(u16),
-                rng.int(u16),
-                rng.int(u16),
-                rng.int(u16),
-                rng.int(u16),
-                rng.int(u16),
-                rng.int(u16),
-                rng.int(u16),
-            });
-        }
-        if (comptime containsAny(fn_str, &.{ "url", "website", "homepage" })) {
-            const last = self.pickRandom([]const u8, &faker_data.last_names);
-            const tld = self.pickRandom([]const u8, &faker_data.tlds);
-            return std.fmt.allocPrint(allocator, "https://www.{s}.{s}", .{
-                std.ascii.lowerString(try allocator.dupe(u8, last), last),
-                tld,
-            });
-        }
+        // --- Company ---
+        if (comptime containsAny(fn_str, &.{ "company", "employer", "organization", "organisation" }))
+            return company.companyName(rng);
 
-        // Company fields
-        if (comptime containsAny(fn_str, &.{ "company", "employer", "organization", "organisation" })) {
-            return self.pickRandom([]const u8, &faker_data.company_names);
-        }
+        // --- Finance ---
+        if (comptime containsAny(fn_str, &.{ "currency_name", "currencyname" }))
+            return finance.currencyName(rng);
+        if (comptime containsAny(fn_str, &.{ "currency_code", "currencycode", "currency" }))
+            return finance.currencyCode(rng);
 
-        // Currency fields
-        if (comptime containsAny(fn_str, &.{ "currency_name", "currencyname" })) {
-            return self.pickRandom([]const u8, &faker_data.currency_names);
-        }
-        if (comptime containsAny(fn_str, &.{ "currency_code", "currencycode", "currency" })) {
-            return self.pickRandom([]const u8, &faker_data.currency_codes);
-        }
-
-        // Text / description
-        if (comptime containsAny(fn_str, &.{ "text", "description", "bio", "about", "content", "body", "summary" })) {
-            return self.generateLoremText(allocator, rng);
-        }
+        // --- Text ---
+        if (comptime containsAny(fn_str, &.{ "text", "description", "bio", "about", "content", "body", "summary" }))
+            return text.loremText(allocator, rng);
 
         // Default: return a random UUID-like string
         return self.generateAnonymousString();
-    }
-
-    /// Generate a short lorem ipsum paragraph.
-    fn generateLoremText(self: *ZigFaker, allocator: std.mem.Allocator, rng: std.Random) ![]const u8 {
-        _ = self;
-        const word_count = rng.intRangeAtMost(usize, 8, 20);
-        var words: std.ArrayListUnmanaged(u8) = .empty;
-        defer words.deinit(allocator);
-        for (0..word_count) |i| {
-            const idx = rng.uintLessThan(usize, faker_data.lorem_words.len);
-            const word = faker_data.lorem_words[idx];
-            if (i > 0) try words.append(allocator, ' ');
-            try words.appendSlice(allocator, word);
-        }
-        return words.toOwnedSlice(allocator);
     }
 
     /// Comptime helper: check if a string contains any of the given substrings.
@@ -551,99 +455,6 @@ test "create array type" {
     try std.testing.expectEqual(@as(usize, 4), val.len);
 }
 
-test "fake data: first_name field" {
-    const Person = struct {
-        first_name: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Person);
-    try std.testing.expect(val.first_name.len > 0);
-    // Verify it's one of our known first names
-    var found = false;
-    for (faker_data.first_names) |name| {
-        if (std.mem.eql(u8, val.first_name, name)) {
-            found = true;
-            break;
-        }
-    }
-    try std.testing.expect(found);
-}
-
-test "fake data: last_name field" {
-    const Person = struct {
-        last_name: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Person);
-    var found = false;
-    for (faker_data.last_names) |name| {
-        if (std.mem.eql(u8, val.last_name, name)) {
-            found = true;
-            break;
-        }
-    }
-    try std.testing.expect(found);
-}
-
-test "fake data: job field" {
-    const Employee = struct {
-        job: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Employee);
-    var found = false;
-    for (faker_data.job_titles) |title| {
-        if (std.mem.eql(u8, val.job, title)) {
-            found = true;
-            break;
-        }
-    }
-    try std.testing.expect(found);
-}
-
-test "fake data: email field contains @" {
-    const Contact = struct {
-        email: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Contact);
-    try std.testing.expect(std.mem.indexOfScalar(u8, val.email, '@') != null);
-}
-
-test "fake data: ipv4 field is valid format" {
-    const Server = struct {
-        ipv4: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Server);
-    // Should contain exactly 3 dots
-    var dot_count: usize = 0;
-    for (val.ipv4) |c| {
-        if (c == '.') dot_count += 1;
-    }
-    try std.testing.expectEqual(@as(usize, 3), dot_count);
-}
-
-test "fake data: ipv6 field is valid format" {
-    const Server = struct {
-        ipv6: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Server);
-    // Should contain exactly 7 colons
-    var colon_count: usize = 0;
-    for (val.ipv6) |c| {
-        if (c == ':') colon_count += 1;
-    }
-    try std.testing.expectEqual(@as(usize, 7), colon_count);
-}
-
 test "fake data: comprehensive person struct" {
     const Person = struct {
         id: i32,
@@ -699,65 +510,6 @@ test "createMany with seed is reproducible" {
     for (v1, v2) |a, b| {
         try std.testing.expectEqual(a, b);
     }
-}
-
-test "fake data: text field contains spaces (is multiple words)" {
-    const Article = struct {
-        text: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Article);
-    try std.testing.expect(std.mem.indexOfScalar(u8, val.text, ' ') != null);
-}
-
-test "fake data: address field contains number" {
-    const Location = struct {
-        address: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Location);
-    try std.testing.expect(val.address.len > 0);
-    // Address should start with a number
-    try std.testing.expect(val.address[0] >= '0' and val.address[0] <= '9');
-}
-
-test "fake data: company field" {
-    const Business = struct {
-        company: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Business);
-    var found = false;
-    for (faker_data.company_names) |name| {
-        if (std.mem.eql(u8, val.company, name)) {
-            found = true;
-            break;
-        }
-    }
-    try std.testing.expect(found);
-}
-
-test "fake data: url field starts with https" {
-    const WebResource = struct {
-        url: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(WebResource);
-    try std.testing.expect(std.mem.startsWith(u8, val.url, "https://"));
-}
-
-test "fake data: phone field contains dashes" {
-    const Contact = struct {
-        phone: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Contact);
-    try std.testing.expect(std.mem.indexOfScalar(u8, val.phone, '-') != null);
 }
 
 test "anonymous mode: strings are UUID-like" {
@@ -824,16 +576,6 @@ test "create i16 integer" {
     defer faker.deinit();
     const val = try faker.create(i16);
     _ = val;
-}
-
-test "fake data: currency_code has 3 chars" {
-    const Finance = struct {
-        currency_code: []const u8,
-    };
-    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
-    defer faker.deinit();
-    const val = try faker.create(Finance);
-    try std.testing.expectEqual(@as(usize, 3), val.currency_code.len);
 }
 
 test "createMany with count 1" {
