@@ -10,15 +10,18 @@
 //! const zigfaker = @import("zigfaker");
 //!
 //! test "example" {
-//!     var faker = zigfaker.ZigFaker.init(std.testing.allocator);
+//!     var faker = zigfaker.ZigFaker.initWithFakeData(std.testing.allocator);
 //!     defer faker.deinit();
 //!
 //!     const id = try faker.create(i32);
 //!     const name = try faker.create([]const u8);
 //!
-//!     const MyStruct = struct { id: i32, name: []const u8 };
-//!     const obj = try faker.create(MyStruct);
-//!     _ = obj;
+//!     const Person = struct {
+//!         first_name: []const u8,
+//!         last_name: []const u8,
+//!     };
+//!     const person = try faker.create(MyStruct);
+//!     _ = person;
 //! }
 //! ```
 
