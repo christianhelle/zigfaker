@@ -294,7 +294,9 @@ pub const streets = [_][]const u8{
 pub const email_domains = [_][]const u8{
     "gmail.com",    "yahoo.com",      "hotmail.com", "outlook.com",
     "icloud.com",   "protonmail.com", "mail.com",    "zoho.com",
-    "fastmail.com", "tutanota.com",
+    "fastmail.com", "tutanota.com",   "live.com",    "msn.com",
+    "aol.com",      "yandex.com",     "gmx.com",     "inbox.com",
+    "hey.com",      "pm.me",          "runbox.com",  "mailfence.com",
 };
 
 pub const company_domains = [_][]const u8{
@@ -302,6 +304,10 @@ pub const company_domains = [_][]const u8{
     "hooli.com",    "piedpiper.com", "dunder.com",   "waystar.com",
     "veridian.com", "cyberdyne.com", "aperture.com", "weyland.com",
     "nakatomi.com", "abstergo.com",  "oscorp.com",   "stark.com",
+    "wayne.com",    "luthor.com",    "spectre.com",  "virtucon.com",
+    "vandelay.com", "bluth.com",     "wernham.com",  "sterling.com",
+    "megacorp.com", "omnicorp.com",  "soylent.com",  "tyrell.com",
+    "rekall.com",   "lacuna.com",    "massive.com",  "genco.com",
 };
 
 pub const company_names = [_][]const u8{
@@ -363,12 +369,17 @@ pub const company_names = [_][]const u8{
 };
 
 pub const tlds = [_][]const u8{
-    "com", "net", "org", "io", "co", "dev", "app", "tech", "info", "biz",
+    "com",  "net", "org", "io", "co", "dev", "app", "tech",
+    "info", "biz", "xyz", "me", "us", "uk",  "ca",  "au",
+    "de",   "fr",  "ai",  "gg",
 };
 
 pub const hostnames_prefix = [_][]const u8{
-    "api", "web", "app", "mail", "ftp", "smtp", "pop3",  "imap",
-    "db",  "srv", "cdn", "ns1",  "ns2", "vpn",  "proxy", "lb",
+    "api",  "web",   "app",    "mail",  "ftp",   "smtp",
+    "pop3", "imap",  "db",     "srv",   "cdn",   "ns1",
+    "ns2",  "vpn",   "proxy",  "lb",    "dev",   "staging",
+    "prod", "test",  "qa",     "uat",   "admin", "portal",
+    "auth", "login", "static", "media", "files", "docs",
 };
 
 pub const currency_names = [_][]const u8{
