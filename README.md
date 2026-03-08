@@ -98,7 +98,7 @@ const std = @import("std");
 const zigfaker = @import("zigfaker");
 
 test "create anonymous integer" {
-    var faker = zigfaker.AutoFaker.init(std.testing.allocator);
+    var faker = zigfaker.ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
 
     const value = try faker.create(i32);
@@ -113,7 +113,7 @@ test "create anonymous integer" {
 ### Anonymous primitive types
 
 ```zig
-var faker = zigfaker.AutoFaker.init(allocator);
+var faker = zigfaker.ZigFaker.init(allocator);
 defer faker.deinit();
 
 const id     = try faker.create(i32);     // e.g. 1453820643
@@ -131,7 +131,7 @@ const User = struct {
     active: bool,
 };
 
-var faker = zigfaker.AutoFaker.init(allocator);
+var faker = zigfaker.ZigFaker.init(allocator);
 defer faker.deinit();
 
 const user = try faker.create(User);
@@ -141,7 +141,7 @@ const user = try faker.create(User);
 ### Create many instances
 
 ```zig
-var faker = zigfaker.AutoFaker.init(allocator);
+var faker = zigfaker.ZigFaker.init(allocator);
 defer faker.deinit();
 
 const users = try faker.createMany(User, 3);
@@ -169,7 +169,7 @@ const Person = struct {
     currency_code: []const u8,
 };
 
-var faker = zigfaker.AutoFaker.initWithFakeData(allocator);
+var faker = zigfaker.ZigFaker.initWithFakeData(allocator);
 defer faker.deinit();
 
 const person = try faker.create(Person);
@@ -203,7 +203,7 @@ const Employee = struct {
     address: Address,
 };
 
-var faker = zigfaker.AutoFaker.initWithFakeData(allocator);
+var faker = zigfaker.ZigFaker.initWithFakeData(allocator);
 defer faker.deinit();
 
 const emp = try faker.create(Employee);
@@ -216,7 +216,7 @@ const emp = try faker.create(Employee);
 ```zig
 const Status = enum { pending, active, suspended, closed };
 
-var faker = zigfaker.AutoFaker.init(allocator);
+var faker = zigfaker.ZigFaker.init(allocator);
 defer faker.deinit();
 
 const status = try faker.create(Status); // one of the four variants
@@ -225,7 +225,7 @@ const status = try faker.create(Status); // one of the four variants
 ### Optional types
 
 ```zig
-var faker = zigfaker.AutoFaker.init(allocator);
+var faker = zigfaker.ZigFaker.init(allocator);
 defer faker.deinit();
 
 const maybe_id = try faker.create(?i32); // randomly null or a random i32
@@ -236,7 +236,7 @@ const maybe_id = try faker.create(?i32); // randomly null or a random i32
 For deterministic tests, initialize with a seed:
 
 ```zig
-var faker = zigfaker.AutoFaker.initWithSeed(allocator, 42);
+var faker = zigfaker.ZigFaker.initWithSeed(allocator, 42);
 defer faker.deinit();
 
 const v1 = try faker.create(i32); // always the same value for seed 42
@@ -247,29 +247,29 @@ const v1 = try faker.create(i32); // always the same value for seed 42
 ## API Reference
 
 ```zig
-pub const AutoFaker = struct {
+pub const ZigFaker = struct {
     /// Initialize with random seed. Strings are UUID-like random values.
-    pub fn init(allocator: std.mem.Allocator) AutoFaker
+    pub fn init(allocator: std.mem.Allocator) ZigFaker
 
     /// Initialize with a fixed seed for reproducible output.
-    pub fn initWithSeed(allocator: std.mem.Allocator, seed: u64) AutoFaker
+    pub fn initWithSeed(allocator: std.mem.Allocator, seed: u64) ZigFaker
 
     /// Initialize in fake data mode. String fields use field names to generate
     /// contextually appropriate fake data (names, emails, IPs, etc.).
-    pub fn initWithFakeData(allocator: std.mem.Allocator) AutoFaker
+    pub fn initWithFakeData(allocator: std.mem.Allocator) ZigFaker
 
     /// Initialize in fake data mode with a fixed seed.
-    pub fn initWithFakeDataAndSeed(allocator: std.mem.Allocator, seed: u64) AutoFaker
+    pub fn initWithFakeDataAndSeed(allocator: std.mem.Allocator, seed: u64) ZigFaker
 
     /// Free all memory allocated for strings.
-    pub fn deinit(self: *AutoFaker) void
+    pub fn deinit(self: *ZigFaker) void
 
     /// Create a single anonymous/fake instance of type T.
-    pub fn create(self: *AutoFaker, comptime T: type) !T
+    pub fn create(self: *ZigFaker, comptime T: type) !T
 
     /// Create a slice of `count` anonymous/fake instances of type T.
-    /// The slice is owned by the AutoFaker arena and freed on deinit().
-    pub fn createMany(self: *AutoFaker, comptime T: type, count: usize) ![]T
+    /// The slice is owned by the ZigFaker arena and freed on deinit().
+    pub fn createMany(self: *ZigFaker, comptime T: type, count: usize) ![]T
 };
 ```
 
