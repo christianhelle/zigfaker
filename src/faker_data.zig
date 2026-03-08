@@ -383,18 +383,25 @@ pub const hostnames_prefix = [_][]const u8{
 };
 
 pub const currency_names = [_][]const u8{
-    "United States Dollar", "Euro",             "British Pound Sterling",
-    "Japanese Yen",         "Canadian Dollar",  "Swiss Franc",
-    "Australian Dollar",    "Chinese Yuan",     "Hong Kong Dollar",
-    "Swedish Krona",        "Norwegian Krone",  "Danish Krone",
-    "New Zealand Dollar",   "Singapore Dollar", "South Korean Won",
-    "Indian Rupee",         "Brazilian Real",   "Mexican Peso",
-    "South African Rand",   "Turkish Lira",
+    "United States Dollar", "Euro",              "British Pound Sterling",
+    "Japanese Yen",         "Canadian Dollar",   "Swiss Franc",
+    "Australian Dollar",    "Chinese Yuan",      "Hong Kong Dollar",
+    "Swedish Krona",        "Norwegian Krone",   "Danish Krone",
+    "New Zealand Dollar",   "Singapore Dollar",  "South Korean Won",
+    "Indian Rupee",         "Brazilian Real",    "Mexican Peso",
+    "South African Rand",   "Turkish Lira",      "Russian Ruble",
+    "Polish Zloty",         "Czech Koruna",      "Hungarian Forint",
+    "Israeli Shekel",       "Saudi Riyal",       "UAE Dirham",
+    "Thai Baht",            "Malaysian Ringgit", "Indonesian Rupiah",
+    "Philippine Peso",      "Pakistani Rupee",   "Egyptian Pound",
+    "Argentinian Peso",     "Chilean Peso",
 };
 
 pub const currency_codes = [_][]const u8{
     "USD", "EUR", "GBP", "JPY", "CAD", "CHF", "AUD", "CNY", "HKD", "SEK",
     "NOK", "DKK", "NZD", "SGD", "KRW", "INR", "BRL", "MXN", "ZAR", "TRY",
+    "RUB", "PLN", "CZK", "HUF", "ILS", "SAR", "AED", "THB", "MYR", "IDR",
+    "PHP", "PKR", "EGP", "ARS", "CLP",
 };
 
 pub const lorem_words = [_][]const u8{
