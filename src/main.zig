@@ -11,7 +11,7 @@ pub fn main() !void {
 
     // Anonymous data generation
     {
-        var faker = zigfaker.AutoFaker.init(allocator);
+        var faker = zigfaker.ZigFaker.init(allocator);
         defer faker.deinit();
 
         const id = try faker.create(i32);
@@ -38,7 +38,7 @@ pub fn main() !void {
             country: []const u8,
         };
 
-        var faker = zigfaker.AutoFaker.initWithFakeData(allocator);
+        var faker = zigfaker.ZigFaker.initWithFakeData(allocator);
         defer faker.deinit();
 
         const person = try faker.create(Person);

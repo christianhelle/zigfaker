@@ -10,7 +10,7 @@
 //! const zigfaker = @import("zigfaker");
 //!
 //! test "example" {
-//!     var faker = zigfaker.AutoFaker.init(std.testing.allocator);
+//!     var faker = zigfaker.ZigFaker.init(std.testing.allocator);
 //!     defer faker.deinit();
 //!
 //!     const id = try faker.create(i32);
@@ -25,15 +25,15 @@
 const std = @import("std");
 const faker_data = @import("faker_data.zig");
 
-/// AutoFaker generates anonymous or realistic-looking fake data for use in unit tests.
+/// ZigFaker generates anonymous or realistic-looking fake data for use in unit tests.
 /// It uses comptime type reflection to automatically populate struct fields.
-pub const AutoFaker = struct {
+pub const ZigFaker = struct {
     arena: std.heap.ArenaAllocator,
     prng: std.Random.DefaultPrng,
     use_fake_data: bool,
 
-    /// Initialize AutoFaker for anonymous (random) data generation.
-    pub fn init(allocator: std.mem.Allocator) AutoFaker {
+    /// Initialize ZigFaker for anonymous (random) data generation.
+    pub fn init(allocator: std.mem.Allocator) ZigFaker {
         const seed = @as(u64, @bitCast(std.time.milliTimestamp()));
         return .{
             .arena = std.heap.ArenaAllocator.init(allocator),
@@ -42,8 +42,8 @@ pub const AutoFaker = struct {
         };
     }
 
-    /// Initialize AutoFaker with a specific seed for reproducible results.
-    pub fn initWithSeed(allocator: std.mem.Allocator, seed: u64) AutoFaker {
+    /// Initialize ZigFaker with a specific seed for reproducible results.
+    pub fn initWithSeed(allocator: std.mem.Allocator, seed: u64) ZigFaker {
         return .{
             .arena = std.heap.ArenaAllocator.init(allocator),
             .prng = std.Random.DefaultPrng.init(seed),
@@ -51,10 +51,10 @@ pub const AutoFaker = struct {
         };
     }
 
-    /// Initialize AutoFaker for realistic fake data generation.
+    /// Initialize ZigFaker for realistic fake data generation.
     /// String fields in structs will be populated with contextually appropriate
     /// fake data based on field names (e.g. "first_name" gets a real first name).
-    pub fn initWithFakeData(allocator: std.mem.Allocator) AutoFaker {
+    pub fn initWithFakeData(allocator: std.mem.Allocator) ZigFaker {
         const seed = @as(u64, @bitCast(std.time.milliTimestamp()));
         return .{
             .arena = std.heap.ArenaAllocator.init(allocator),
@@ -63,8 +63,8 @@ pub const AutoFaker = struct {
         };
     }
 
-    /// Initialize AutoFaker with fake data and a specific seed.
-    pub fn initWithFakeDataAndSeed(allocator: std.mem.Allocator, seed: u64) AutoFaker {
+    /// Initialize ZigFaker with fake data and a specific seed.
+    pub fn initWithFakeDataAndSeed(allocator: std.mem.Allocator, seed: u64) ZigFaker {
         return .{
             .arena = std.heap.ArenaAllocator.init(allocator),
             .prng = std.Random.DefaultPrng.init(seed),
@@ -73,12 +73,12 @@ pub const AutoFaker = struct {
     }
 
     /// Release all memory allocated for string values.
-    pub fn deinit(self: *AutoFaker) void {
+    pub fn deinit(self: *ZigFaker) void {
         self.arena.deinit();
     }
 
     /// Returns the internal random number generator.
-    fn random(self: *AutoFaker) std.Random {
+    fn random(self: *ZigFaker) std.Random {
         return self.prng.random();
     }
 
@@ -90,13 +90,13 @@ pub const AutoFaker = struct {
     /// - Optional types randomly get null or a populated value.
     /// - Arrays are filled with random elements.
     /// - Enums get a random variant.
-    pub fn create(self: *AutoFaker, comptime T: type) !T {
+    pub fn create(self: *ZigFaker, comptime T: type) !T {
         return self.generateValue(T, "");
     }
 
     /// Creates a slice of `count` anonymous instances of the given type T.
-    /// The returned slice is owned by the AutoFaker arena and freed on `deinit()`.
-    pub fn createMany(self: *AutoFaker, comptime T: type, count: usize) ![]T {
+    /// The returned slice is owned by the ZigFaker arena and freed on `deinit()`.
+    pub fn createMany(self: *ZigFaker, comptime T: type, count: usize) ![]T {
         const allocator = self.arena.allocator();
         const items = try allocator.alloc(T, count);
         for (items) |*item| {
@@ -106,7 +106,7 @@ pub const AutoFaker = struct {
     }
 
     /// Generate a value for a specific type, with optional field name hint for fake data.
-    fn generateValue(self: *AutoFaker, comptime T: type, comptime field_name: []const u8) !T {
+    fn generateValue(self: *ZigFaker, comptime T: type, comptime field_name: []const u8) !T {
         const rng = self.random();
         const type_info = @typeInfo(T);
 
@@ -130,7 +130,7 @@ pub const AutoFaker = struct {
                 if (ptr_info.size == .slice and ptr_info.child == u8) {
                     return self.generateString(field_name);
                 }
-                @compileError("AutoFaker: unsupported pointer type: " ++ @typeName(T));
+                @compileError("ZigFaker: unsupported pointer type: " ++ @typeName(T));
             },
             .array => |arr_info| {
                 var result: T = undefined;
@@ -162,13 +162,13 @@ pub const AutoFaker = struct {
                 unreachable;
             },
             .void => return {},
-            else => @compileError("AutoFaker: unsupported type: " ++ @typeName(T)),
+            else => @compileError("ZigFaker: unsupported type: " ++ @typeName(T)),
         }
     }
 
     /// Generate a string value. In fake data mode, uses the field name to pick
     /// contextually appropriate fake data.
-    fn generateString(self: *AutoFaker, comptime field_name: []const u8) ![]const u8 {
+    fn generateString(self: *ZigFaker, comptime field_name: []const u8) ![]const u8 {
         if (self.use_fake_data) {
             return self.generateFakeString(field_name);
         }
@@ -176,7 +176,7 @@ pub const AutoFaker = struct {
     }
 
     /// Generate a UUID-like random string (anonymous mode).
-    fn generateAnonymousString(self: *AutoFaker) ![]const u8 {
+    fn generateAnonymousString(self: *ZigFaker) ![]const u8 {
         const allocator = self.arena.allocator();
         const rng = self.random();
         const buf = try allocator.alloc(u8, 36);
@@ -193,13 +193,13 @@ pub const AutoFaker = struct {
     }
 
     /// Pick a random element from a slice.
-    fn pickRandom(self: *AutoFaker, comptime T: type, items: []const T) T {
+    fn pickRandom(self: *ZigFaker, comptime T: type, items: []const T) T {
         const idx = self.random().uintLessThan(usize, items.len);
         return items[idx];
     }
 
     /// Generate a fake string based on field name context (fake data mode).
-    fn generateFakeString(self: *AutoFaker, comptime field_name: []const u8) ![]const u8 {
+    fn generateFakeString(self: *ZigFaker, comptime field_name: []const u8) ![]const u8 {
         const allocator = self.arena.allocator();
         const rng = self.random();
 
@@ -240,7 +240,7 @@ pub const AutoFaker = struct {
         if (comptime containsAny(fn_str, &.{ "city", "town" })) {
             return self.pickRandom([]const u8, &faker_data.cities);
         }
-        if (comptime containsAny(fn_str, &.{ "country" })) {
+        if (comptime containsAny(fn_str, &.{"country"})) {
             return self.pickRandom([]const u8, &faker_data.countries);
         }
         if (comptime containsAny(fn_str, &.{ "street", "address", "addr" })) {
@@ -254,8 +254,8 @@ pub const AutoFaker = struct {
         }
         if (comptime containsAny(fn_str, &.{ "state", "province", "region" })) {
             const states = [_][]const u8{
-                "California", "Texas",   "New York",  "Florida",
-                "Illinois",   "Ohio",    "Georgia",   "Michigan",
+                "California", "Texas",    "New York", "Florida",
+                "Illinois",   "Ohio",     "Georgia",  "Michigan",
                 "Washington", "Colorado",
             };
             return self.pickRandom([]const u8, &states);
@@ -362,7 +362,7 @@ pub const AutoFaker = struct {
     }
 
     /// Generate a short lorem ipsum paragraph.
-    fn generateLoremText(self: *AutoFaker, allocator: std.mem.Allocator, rng: std.Random) ![]const u8 {
+    fn generateLoremText(self: *ZigFaker, allocator: std.mem.Allocator, rng: std.Random) ![]const u8 {
         _ = self;
         const word_count = rng.intRangeAtMost(usize, 8, 20);
         var words: std.ArrayListUnmanaged(u8) = .empty;
@@ -389,63 +389,63 @@ pub const AutoFaker = struct {
 // ===== Tests =====
 
 test "create i32" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(i32);
     _ = val; // Just ensure it compiles and runs without error
 }
 
 test "create u32" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(u32);
     _ = val;
 }
 
 test "create i64" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(i64);
     _ = val;
 }
 
 test "create u64" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(u64);
     _ = val;
 }
 
 test "create f32" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(f32);
     _ = val;
 }
 
 test "create f64" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(f64);
     _ = val;
 }
 
 test "create bool" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(bool);
     _ = val;
 }
 
 test "create string returns non-empty string" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create([]const u8);
     try std.testing.expect(val.len > 0);
 }
 
 test "create string returns UUID-like format" {
-    var faker = AutoFaker.initWithSeed(std.testing.allocator, 42);
+    var faker = ZigFaker.initWithSeed(std.testing.allocator, 42);
     defer faker.deinit();
     const val = try faker.create([]const u8);
     try std.testing.expectEqual(@as(usize, 36), val.len);
@@ -461,7 +461,7 @@ test "create struct with primitive fields" {
         score: f64,
         active: bool,
     };
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Simple);
     _ = val;
@@ -472,7 +472,7 @@ test "create struct with string field" {
         id: i32,
         name: []const u8,
     };
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(WithString);
     try std.testing.expect(val.name.len > 0);
@@ -487,14 +487,14 @@ test "create nested struct" {
         id: i64,
         inner: Inner,
     };
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Outer);
     try std.testing.expect(val.inner.label.len > 0);
 }
 
 test "createMany returns correct count" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const items = try faker.createMany(i32, 5);
     try std.testing.expectEqual(@as(usize, 5), items.len);
@@ -502,7 +502,7 @@ test "createMany returns correct count" {
 
 test "createMany returns different values (deterministic)" {
     // Use a fixed seed to avoid probabilistic test behavior.
-    var faker = AutoFaker.initWithSeed(std.testing.allocator, 12345);
+    var faker = ZigFaker.initWithSeed(std.testing.allocator, 12345);
     defer faker.deinit();
     const items = try faker.createMany(i32, 3);
     // Verify deterministic properties only (length).
@@ -514,14 +514,14 @@ test "createMany struct" {
         x: f64,
         y: f64,
     };
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const points = try faker.createMany(Point, 3);
     try std.testing.expectEqual(@as(usize, 3), points.len);
 }
 
 test "create optional type" {
-    var faker = AutoFaker.initWithSeed(std.testing.allocator, 12345);
+    var faker = ZigFaker.initWithSeed(std.testing.allocator, 12345);
     defer faker.deinit();
     // Run multiple times to verify both null and non-null can be produced
     var got_non_null = false;
@@ -535,14 +535,14 @@ test "create optional type" {
 
 test "create enum" {
     const Color = enum { red, green, blue };
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Color);
     _ = val; // Just ensure it's a valid enum value
 }
 
 test "create array type" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create([4]i32);
     try std.testing.expectEqual(@as(usize, 4), val.len);
@@ -552,7 +552,7 @@ test "fake data: first_name field" {
     const Person = struct {
         first_name: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Person);
     try std.testing.expect(val.first_name.len > 0);
@@ -571,7 +571,7 @@ test "fake data: last_name field" {
     const Person = struct {
         last_name: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Person);
     var found = false;
@@ -588,7 +588,7 @@ test "fake data: job field" {
     const Employee = struct {
         job: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Employee);
     var found = false;
@@ -605,7 +605,7 @@ test "fake data: email field contains @" {
     const Contact = struct {
         email: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Contact);
     try std.testing.expect(std.mem.indexOfScalar(u8, val.email, '@') != null);
@@ -615,7 +615,7 @@ test "fake data: ipv4 field is valid format" {
     const Server = struct {
         ipv4: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Server);
     // Should contain exactly 3 dots
@@ -630,7 +630,7 @@ test "fake data: ipv6 field is valid format" {
     const Server = struct {
         ipv6: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Server);
     // Should contain exactly 7 colons
@@ -656,7 +656,7 @@ test "fake data: comprehensive person struct" {
         currency_name: []const u8,
         currency_code: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Person);
     try std.testing.expect(val.first_name.len > 0);
@@ -674,9 +674,9 @@ test "fake data: comprehensive person struct" {
 
 test "create with seed is reproducible" {
     const Simple = struct { id: i32, score: f64 };
-    var faker1 = AutoFaker.initWithSeed(std.testing.allocator, 99999);
+    var faker1 = ZigFaker.initWithSeed(std.testing.allocator, 99999);
     defer faker1.deinit();
-    var faker2 = AutoFaker.initWithSeed(std.testing.allocator, 99999);
+    var faker2 = ZigFaker.initWithSeed(std.testing.allocator, 99999);
     defer faker2.deinit();
 
     const v1 = try faker1.create(Simple);
@@ -686,9 +686,9 @@ test "create with seed is reproducible" {
 }
 
 test "createMany with seed is reproducible" {
-    var faker1 = AutoFaker.initWithSeed(std.testing.allocator, 42424242);
+    var faker1 = ZigFaker.initWithSeed(std.testing.allocator, 42424242);
     defer faker1.deinit();
-    var faker2 = AutoFaker.initWithSeed(std.testing.allocator, 42424242);
+    var faker2 = ZigFaker.initWithSeed(std.testing.allocator, 42424242);
     defer faker2.deinit();
 
     const v1 = try faker1.createMany(i32, 5);
@@ -702,7 +702,7 @@ test "fake data: text field contains spaces (is multiple words)" {
     const Article = struct {
         text: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Article);
     try std.testing.expect(std.mem.indexOfScalar(u8, val.text, ' ') != null);
@@ -712,7 +712,7 @@ test "fake data: address field contains number" {
     const Location = struct {
         address: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Location);
     try std.testing.expect(val.address.len > 0);
@@ -724,7 +724,7 @@ test "fake data: company field" {
     const Business = struct {
         company: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Business);
     var found = false;
@@ -741,7 +741,7 @@ test "fake data: url field starts with https" {
     const WebResource = struct {
         url: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(WebResource);
     try std.testing.expect(std.mem.startsWith(u8, val.url, "https://"));
@@ -751,7 +751,7 @@ test "fake data: phone field contains dashes" {
     const Contact = struct {
         phone: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Contact);
     try std.testing.expect(std.mem.indexOfScalar(u8, val.phone, '-') != null);
@@ -763,7 +763,7 @@ test "anonymous mode: strings are UUID-like" {
         email: []const u8,
         company: []const u8,
     };
-    var faker = AutoFaker.initWithSeed(std.testing.allocator, 777);
+    var faker = ZigFaker.initWithSeed(std.testing.allocator, 777);
     defer faker.deinit();
     const val = try faker.create(WithStrings);
     // In anonymous mode, all strings should be UUID-format (36 chars)
@@ -778,7 +778,7 @@ test "struct with enum field" {
         id: i32,
         status: Status,
     };
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(User);
     _ = val.status; // Just ensure it's a valid enum value
@@ -789,35 +789,35 @@ test "struct with optional field" {
         id: i32,
         nickname: ?[]const u8,
     };
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(User);
     _ = val;
 }
 
 test "create u8 integer" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(u8);
     _ = val;
 }
 
 test "create i8 integer" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(i8);
     _ = val;
 }
 
 test "create u16 integer" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(u16);
     _ = val;
 }
 
 test "create i16 integer" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(i16);
     _ = val;
@@ -827,28 +827,28 @@ test "fake data: currency_code has 3 chars" {
     const Finance = struct {
         currency_code: []const u8,
     };
-    var faker = AutoFaker.initWithFakeData(std.testing.allocator);
+    var faker = ZigFaker.initWithFakeData(std.testing.allocator);
     defer faker.deinit();
     const val = try faker.create(Finance);
     try std.testing.expectEqual(@as(usize, 3), val.currency_code.len);
 }
 
 test "createMany with count 1" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const items = try faker.createMany(i32, 1);
     try std.testing.expectEqual(@as(usize, 1), items.len);
 }
 
 test "createMany with count 10" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const items = try faker.createMany(i32, 10);
     try std.testing.expectEqual(@as(usize, 10), items.len);
 }
 
 test "createMany string" {
-    var faker = AutoFaker.init(std.testing.allocator);
+    var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
     const items = try faker.createMany([]const u8, 3);
     try std.testing.expectEqual(@as(usize, 3), items.len);
