@@ -65,7 +65,7 @@ In fake data mode, string fields are populated with realistic data based on fiel
 
 ## Requirements
 
-- Zig 0.14.0 or later
+- Zig 0.15.0 or later
 
 ---
 
@@ -292,6 +292,7 @@ zig build test
 ```
 
 All 43 tests cover:
+
 - Primitive types (integers, floats, booleans)
 - String generation (anonymous UUID-like and fake data)
 - Struct population (anonymous and fake data modes)
