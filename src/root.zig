@@ -357,6 +357,13 @@ test "create bool" {
     _ = val;
 }
 
+test "default seed changes across calls" {
+    const first = ZigFaker.nextDefaultSeed();
+    const second = ZigFaker.nextDefaultSeed();
+
+    try std.testing.expect(first != second);
+}
+
 test "create string returns non-empty string" {
     var faker = ZigFaker.init(std.testing.allocator);
     defer faker.deinit();
