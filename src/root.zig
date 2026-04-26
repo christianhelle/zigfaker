@@ -106,8 +106,8 @@ pub const ZigFaker = struct {
         // Advance by the 64-bit golden ratio constant to quickly decorrelate
         // successive seeds, then mix in stable/global and per-call stack addresses.
         const counter = default_seed_counter.fetchAdd(0x9e3779b97f4a7c15, .monotonic);
-        const global_addr = @as(u64, @intCast(@intFromPtr(&default_seed_counter)));
-        const stack_addr = @as(u64, @intCast(@intFromPtr(&stack_addr_marker)));
+        const global_addr = @as(u64, @intFromPtr(&default_seed_counter));
+        const stack_addr = @as(u64, @intFromPtr(&stack_addr_marker));
         return counter ^ global_addr ^ stack_addr;
     }
 
