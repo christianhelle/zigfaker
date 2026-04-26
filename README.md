@@ -65,7 +65,7 @@ In fake data mode, string fields are populated with realistic data based on fiel
 
 ## Requirements
 
-- Zig 0.15.0 or later
+- Zig 0.16.0 or later
 
 ---
 
