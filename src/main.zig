@@ -2,7 +2,9 @@ const std = @import("std");
 const zigfaker = @import("zigfaker");
 
 pub fn main() !void {
-    const allocator = std.heap.page_allocator;
+    var debug_allocator: std.heap.DebugAllocator(.{}) = .init;
+    defer std.debug.assert(debug_allocator.deinit() == .ok);
+    const allocator = debug_allocator.allocator();
 
     std.debug.print("ZigFaker - Anonymous Data Generation Example\n", .{});
     std.debug.print("============================================\n\n", .{});

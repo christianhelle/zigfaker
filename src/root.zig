@@ -102,12 +102,12 @@ pub const ZigFaker = struct {
 
     /// Generates a best-effort default seed for non-deterministic constructors.
     fn nextDefaultSeed() u64 {
-        var stack_marker: u8 = 0;
+        var stack_addr_marker: u8 = 0;
         // Advance by the 64-bit golden ratio constant to quickly decorrelate
         // successive seeds, then mix in stable/global and per-call stack addresses.
         const counter = default_seed_counter.fetchAdd(0x9e3779b97f4a7c15, .monotonic);
         const global_addr = @as(u64, @intCast(@intFromPtr(&default_seed_counter)));
-        const stack_addr = @as(u64, @intCast(@intFromPtr(&stack_marker)));
+        const stack_addr = @as(u64, @intCast(@intFromPtr(&stack_addr_marker)));
         return counter ^ global_addr ^ stack_addr;
     }
 
