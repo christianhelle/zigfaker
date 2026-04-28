@@ -36,6 +36,8 @@ const company = @import("generators/company.zig");
 const finance = @import("generators/finance.zig");
 const text = @import("generators/text.zig");
 
+var default_seed_counter = std.atomic.Value(u64).init(0);
+
 // Ensure all generator modules are unconditionally compiled so their tests are included.
 comptime {
     _ = text;
@@ -50,7 +52,7 @@ pub const ZigFaker = struct {
 
     /// Initialize ZigFaker for anonymous (random) data generation.
     pub fn init(allocator: std.mem.Allocator) ZigFaker {
-        const seed = @as(u64, @bitCast(std.time.milliTimestamp()));
+        const seed = nextDefaultSeed();
         return .{
             .arena = std.heap.ArenaAllocator.init(allocator),
             .prng = std.Random.DefaultPrng.init(seed),
@@ -71,7 +73,7 @@ pub const ZigFaker = struct {
     /// String fields in structs will be populated with contextually appropriate
     /// fake data based on field names (e.g. "first_name" gets a real first name).
     pub fn initWithFakeData(allocator: std.mem.Allocator) ZigFaker {
-        const seed = @as(u64, @bitCast(std.time.milliTimestamp()));
+        const seed = nextDefaultSeed();
         return .{
             .arena = std.heap.ArenaAllocator.init(allocator),
             .prng = std.Random.DefaultPrng.init(seed),
@@ -96,6 +98,17 @@ pub const ZigFaker = struct {
     /// Returns the internal random number generator.
     fn random(self: *ZigFaker) std.Random {
         return self.prng.random();
+    }
+
+    /// Generates a best-effort default seed for non-deterministic constructors.
+    fn nextDefaultSeed() u64 {
+        var stack_addr_marker: u8 = 0;
+        // Advance by the 64-bit golden ratio constant to quickly decorrelate
+        // successive seeds, then mix in stable/global and per-call stack addresses.
+        const counter = default_seed_counter.fetchAdd(0x9e3779b97f4a7c15, .monotonic);
+        const global_addr = @as(u64, @intFromPtr(&default_seed_counter));
+        const stack_addr = @as(u64, @intFromPtr(&stack_addr_marker));
+        return counter ^ global_addr ^ stack_addr;
     }
 
     /// Creates an anonymous instance of the given type T.
@@ -342,6 +355,13 @@ test "create bool" {
     defer faker.deinit();
     const val = try faker.create(bool);
     _ = val;
+}
+
+test "default seed changes across calls" {
+    const first = ZigFaker.nextDefaultSeed();
+    const second = ZigFaker.nextDefaultSeed();
+
+    try std.testing.expect(first != second);
 }
 
 test "create string returns non-empty string" {
