@@ -185,7 +185,7 @@ pub const ZigFaker = struct {
             .@"enum" => |info| {
                 const idx = rng.uintLessThan(usize, info.field_values.len);
                 inline for (info.field_values, 0..) |value, i| {
-                    if (i == idx) return @as(T, @enumFromInt(value));
+                    if (i == idx) return @as(T, @fromBackingInt(@intCast(value)));
                 }
                 unreachable;
             },
