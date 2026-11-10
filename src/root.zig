@@ -168,10 +168,10 @@ pub const ZigFaker = struct {
                 }
                 return result;
             },
-            .@"struct" => {
+            .@"struct" => |info| {
                 var result: T = undefined;
-                inline for (std.meta.fields(T)) |field| {
-                    @field(result, field.name) = try self.generateValue(field.type, field.name);
+                inline for (info.field_names, info.field_types) |name, FieldType| {
+                    @field(result, name) = try self.generateValue(FieldType, name);
                 }
                 return result;
             },
@@ -182,11 +182,10 @@ pub const ZigFaker = struct {
                     return try self.generateValue(opt_info.child, field_name);
                 }
             },
-            .@"enum" => {
-                const fields = std.meta.fields(T);
-                const idx = rng.uintLessThan(usize, fields.len);
-                inline for (fields, 0..) |field, i| {
-                    if (i == idx) return @as(T, @enumFromInt(field.value));
+            .@"enum" => |info| {
+                const idx = rng.uintLessThan(usize, info.field_values.len);
+                inline for (info.field_values, 0..) |value, i| {
+                    if (i == idx) return @as(T, @enumFromInt(value));
                 }
                 unreachable;
             },
